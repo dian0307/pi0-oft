@@ -7,7 +7,7 @@ from mcap.reader import make_reader
 import bisect
 import h5py
 
-# 从 buff 转换到 bgr 格式
+# img 从 buff 转换到 bgr 格式
 def decode_compressed_image(msg):
     # The 'data' field contains the raw byte data of the image
     np_arr = np.frombuffer(msg.data, np.uint8)
@@ -99,7 +99,7 @@ def data_transform(path, episode_num, save_path):
                 
                 # 找到左右两个最近的时间戳
                 closest_state = None
-                min_diff = float('inf')
+                min_diff = float('inf')     # 正无穷大
                 
                 # 如果 idx 指向有效位置
                 if idx < len(state):
