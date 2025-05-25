@@ -55,6 +55,23 @@ class Policy(BasePolicy):
         outputs = jax.tree.map(lambda x: np.asarray(x[0, ...]), outputs)
         return self._output_transform(outputs)
 
+    # 对于训练数据集的 infer
+    def infer_dataset(self, observation: _model.Observation, act) -> dict:
+        self._rng, sample_rng = jax.random.split(self._rng)
+        outputs = {
+            "state": observation.state,
+            "actions": self._sample_actions(sample_rng, observation, **self._sample_kwargs),
+        }
+
+        groudtruth = {
+             "state": observation.state,
+             "actions": act,
+        }
+        # Unbatch and convert to np.ndarray.
+        outputs = jax.tree.map(lambda x: np.asarray(x[0, ...]), outputs)
+        groudtruth = jax.tree.map(lambda x: np.asarray(x[0, ...]), groudtruth)
+        return self._output_transform(outputs), self._output_transform(groudtruth)
+    
     @property
     def metadata(self) -> dict[str, Any]:
         return self._metadata
