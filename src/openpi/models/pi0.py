@@ -248,8 +248,8 @@ class Pi0(_model.BaseModel):
         noise = jax.random.normal(noise_rng, actions.shape)
         time = jax.random.beta(time_rng, 1.5, 1, batch_shape) * 0.999 + 0.001
         time_expanded = time[..., None, None]
-        x_t = time_expanded * noise + (1 - time_expanded) * actions
-        u_t = noise - actions
+        x_t = time_expanded * noise + (1 - time_expanded) * actions         # 传输路径中的动作 =  噪声动作和目标动作的加权
+        u_t = noise - actions                                               # 传输路径中速度 = 反过来了
 
         # one big forward pass of prefix + suffix at once
         prefix_tokens, prefix_mask, prefix_ar_mask = self.embed_prefix(observation)
@@ -259,11 +259,11 @@ class Pi0(_model.BaseModel):
         attn_mask = make_attn_mask(input_mask, ar_mask)
         positions = jnp.cumsum(input_mask, axis=1) - 1
         (prefix_out, suffix_out), _ = self.PaliGemma.llm(
-            [prefix_tokens, suffix_tokens], mask=attn_mask, positions=positions
+            [prefix_tokens, suffix_tokens], mask=attn_mask, positions=positions         # 网络建模的目标：将动作映射成下一级的速度
         )
         v_t = self.action_out_proj(suffix_out[:, -self.action_horizon :])
 
-        return jnp.mean(jnp.square(v_t - u_t), axis=-1)
+        return jnp.mean(jnp.square(v_t - u_t), axis=-1)                 # 将映射的速度和基准速度做逼近
 
     @override
     def sample_actions(
